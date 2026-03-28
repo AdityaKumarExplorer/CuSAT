@@ -2,8 +2,6 @@ package com.cusat.scanner;
 
 import com.cusat.model.PortInfo;
 import com.cusat.model.ServiceInfo;
-import com.cusat.util.Constants;
-
 import java.util.HashMap;
 import java.util.Map;
 

@@ -1,22 +1,22 @@
 package com.cusat.scanner;
 
 import com.cusat.model.ScanResult;
-import com.cusat.util.Constants;
+import com.cusat.report.TimelineBuilder;
+import com.cusat.util.TimeUtils;
 
-import java.io.IOException;
 import java.net.InetAddress;
+import java.net.Socket;
 
 /**
- * Checks if the target host is reachable (basic ping-style check).
- * Uses InetAddress.isReachable() – may require privileges or fall back on some OS.
- * Alternative: TCP connect to common ports if ICMP blocked.
+ * Checks if the target host is reachable.
+ * Uses ICMP (isReachable) + TCP fallback (port 80).
  */
 public class HostDiscovery implements IScanner {
 
     private final int timeoutMs;
 
     public HostDiscovery() {
-        this(Constants.DEFAULT_CONNECT_TIMEOUT_MS);
+        this.timeoutMs = 2000; // ✅ fixed default (no dependency on Constants)
     }
 
     public HostDiscovery(int timeoutMs) {
@@ -24,28 +24,62 @@ public class HostDiscovery implements IScanner {
     }
 
     @Override
-    public ScanResult scan(String target) throws Exception {
+    public ScanResult scan(String target) {
+
         long start = System.currentTimeMillis();
 
         ScanResult result = new ScanResult(target);
         result.setScanTimestamp(TimeUtils.getCurrentTimestamp());
 
         boolean reachable = false;
+
         try {
             InetAddress address = InetAddress.getByName(target);
-            reachable = address.isReachable(timeoutMs);  // ICMP ping (best effort)
-        } catch (IOException e) {
-            // Could add fallback: try TCP connect to port 80/443
-            TimelineBuilder.addEvent("Host discovery failed: " + e.getMessage());
+
+            // ✅ Attempt ICMP reachability
+            reachable = address.isReachable(timeoutMs);
+
+            // 🔥 Fallback: TCP connect (important!)
+            if (!reachable) {
+                try (Socket socket = new Socket(target, 80)) {
+                    reachable = true;
+                } catch (Exception ignored) {}
+            }
+
+        } catch (Exception e) {
+            TimelineBuilder.addEvent("Host discovery error: " + e.getMessage());
         }
 
         result.setHostReachable(reachable);
         result.setDurationMs(TimeUtils.getElapsedMillis(start));
 
-        if (!reachable) {
+        if (reachable) {
+            TimelineBuilder.addEvent("Host reachable: " + target);
+        } else {
             TimelineBuilder.addEvent("Host unreachable: " + target);
         }
 
         return result;
     }
 }
+
+/**
+ * IMPROVEMENTS (Future Enhancements):
+ * 1. Replace InetAddress.isReachable() with raw ICMP or NIO-based probing for
+ *    more accurate host discovery (current method is OS-dependent and unreliable).
+ *
+ * 2. Implement multi-port TCP fallback (e.g., 80, 443, 22) instead of a single
+ *    port check to improve detection accuracy.
+ *
+ * 3. Add configurable retry mechanism to reduce false negatives in unstable networks.
+ *
+ * 4. Integrate parallel probing to speed up host discovery in multi-target scans.
+ *
+ * 5. Improve logging by differentiating between DNS resolution failure,
+ *    timeout, and network unreachable conditions.
+ *
+ * 6. Add IPv6 support for broader compatibility.
+ *
+ * 7. Introduce configurable timeout via external config (config.properties)
+ *    instead of hardcoding values.
+ */

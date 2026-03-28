@@ -1,81 +1,60 @@
 package com.cusat.logic;
 
-import com.cusat.model.PortInfo;
+import com.cusat.model.Finding;
 import com.cusat.model.RiskLevel;
 import com.cusat.model.ScanResult;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
- * Evaluates scan results and assigns an overall risk level.
- * Phase 1: simple threshold-based scoring with hardcoded rules.
- * Phase 2+: weighted scoring, configurable thresholds, risk propagation.
+ * Computes overall risk based on findings.
+ * Simplified for stable execution.
  */
 public class RiskScorer {
 
-    private static final List<Rule> DEFAULT_RULES = List.of(
-        new Rule("SSH exposed (potential brute-force risk)", RiskLevel.MEDIUM,
-                p -> p.isOpen() && p.getPort() == 22),
-        new Rule("Telnet exposed (plaintext credentials)", RiskLevel.HIGH,
-                p -> p.isOpen() && p.getPort() == 23),
-        new Rule("SMB exposed (EternalBlue / WannaCry risk)", RiskLevel.HIGH,
-                p -> p.isOpen() && p.getPort() == 445),
-        new Rule("RDP exposed (BlueKeep / credential stuffing)", RiskLevel.HIGH,
-                p -> p.isOpen() && p.getPort() == 3389),
-        new Rule("HTTP/HTTPS exposed (common web vulns)", RiskLevel.LOW,
-                p -> p.isOpen() && (p.getPort() == 80 || p.getPort() == 443)),
-        new Rule("Database exposed (MySQL/MSSQL)", RiskLevel.HIGH,
-                p -> p.isOpen() && (p.getPort() == 1433 || p.getPort() == 3306)),
-        new Rule("Multiple high-risk ports open", RiskLevel.CRITICAL,
-                p -> false) // special case handled in scoring
-    );
-
-    /**
-     * Computes overall risk level and populates findings in the result.
-     */
     public void score(ScanResult result) {
-        if (!result.isHostReachable()) {
+
+        if (result == null || !result.isHostReachable()) {
             result.setOverallRisk(RiskLevel.UNKNOWN);
-            result.addFinding(new Finding("Host unreachable – no meaningful assessment possible", RiskLevel.UNKNOWN));
             return;
         }
 
-        List<Finding> findings = new ArrayList<>();
-        int highRiskCount = 0;
-        int criticalPorts = 0;
+        int high = 0;
+        int medium = 0;
+        int critical = 0;
 
-        for (PortInfo port : result.getPorts()) {
-            if (!port.isOpen()) continue;
-
-            for (Rule rule : DEFAULT_RULES) {
-                if (rule.appliesTo(port)) {
-                    findings.add(new Finding(rule.getDescription(), String.valueOf(port.getPort()), rule.getSeverity()));
-                    if (rule.getSeverity() == RiskLevel.HIGH) {
-                        highRiskCount++;
-                    } else if (rule.getSeverity() == RiskLevel.CRITICAL) {
-                        criticalPorts++;
-                    }
-                }
+        for (Finding f : result.getFindings()) {
+            switch (f.severity()) {
+                case CRITICAL -> critical++;
+                case HIGH -> high++;
+                case MEDIUM -> medium++;
+                default -> {}
             }
         }
 
-        // Special rule: multiple high-risk ports
-        if (highRiskCount >= 3 || criticalPorts >= 1) {
-            findings.add(new Finding("Multiple high/critical risk ports exposed", "multiple", RiskLevel.CRITICAL));
-        }
+        RiskLevel overall;
 
-        // Assign overall risk
-        RiskLevel overall = RiskLevel.LOW;
-        if (criticalPorts >= 1 || highRiskCount >= 3) {
+        if (critical > 0) {
             overall = RiskLevel.CRITICAL;
-        } else if (highRiskCount >= 1) {
+        } else if (high >= 2) {
             overall = RiskLevel.HIGH;
-        } else if (findings.stream().anyMatch(f -> f.getSeverity() == RiskLevel.MEDIUM)) {
+        } else if (medium >= 1) {
             overall = RiskLevel.MEDIUM;
+        } else {
+            overall = RiskLevel.LOW;
         }
 
         result.setOverallRisk(overall);
-        findings.forEach(result::addFinding);
     }
 }
+
+/**
+ * IMPROVEMENTS (Future Enhancements):
+ * 1. Introduce weighted scoring system instead of simple counting.
+ *
+ * 2. Integrate CVSS-based risk scoring.
+ *
+ * 3. Add contextual scoring (internal vs external exposure).
+ *
+ * 4. Support configurable thresholds via config.properties.
+ *
+ * 5. Aggregate risk across multiple hosts.
+ */

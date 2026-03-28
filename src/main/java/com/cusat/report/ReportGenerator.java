@@ -4,8 +4,6 @@ import com.cusat.model.ScanResult;
 
 /**
  * Central class to generate all types of reports.
- * Phase 1: only console text.
- * Phase 2+: add JSON, PDF, HTML, file output, etc.
  */
 public class ReportGenerator {
 
@@ -16,21 +14,49 @@ public class ReportGenerator {
     }
 
     public void generateConsoleReport(ScanResult result) {
-        TimelineBuilder.addEvent("Generating console report");
-        textWriter.write(result);
-        TimelineBuilder.printTimeline();
+
+        if (result == null) {
+            System.out.println("No scan result available.");
+            return;
+        }
+
+        try {
+            TimelineBuilder.addEvent("Generating console report");
+
+            textWriter.write(result);
+
+            TimelineBuilder.printTimeline();
+
+        } catch (Exception e) {
+            System.out.println("Error generating report: " + e.getMessage());
+
+            // fallback (important for demo)
+            System.out.println("\n--- BASIC OUTPUT ---");
+            System.out.println(result);
+        }
     }
 
     // Phase 2 placeholders
     public void generateJsonReport(ScanResult result, String filePath) {
-        // TODO: use Jackson to write JSON
-        System.out.println("JSON report generation not implemented yet (Phase 2).");
+        System.out.println("JSON report generation not implemented yet.");
     }
 
     public void generatePdfReport(ScanResult result, String filePath) {
-        // TODO: use Apache PDFBox
-        System.out.println("PDF report generation not implemented yet (Phase 2).");
+        System.out.println("PDF report generation not implemented yet.");
     }
 
-    // Future: HTML, CSV, email, etc.
+    /**
+     * IMPROVEMENTS (Future Enhancements):
+     * 1. Add JSON export using Jackson library.
+     *
+     * 2. Generate PDF reports using OpenPDF or PDFBox.
+     *
+     * 3. Add HTML report for web integration.
+     *
+     * 4. Support saving reports to file system.
+     *
+     * 5. Add filtering options (e.g., show only HIGH risk).
+     *
+     * 6. Integrate with web dashboard for visualization.
+     */
 }

@@ -1,39 +1,64 @@
 package com.cusat.model;
 
 /**
- * Immutable result of scanning one port.
- * Designed for Phase 1 simplicity and Phase 2 extension (banner, service detection).
+ * Represents the result of scanning one port.
+ * Mutable version for simplicity in Phase 1.
  */
-public record PortInfo(
-    int port,
-    boolean open,
-    String status,          // "open", "closed", "filtered", "timeout", "error"
-    String serviceName,     // "http", "ssh", "mysql", etc. – detected later
-    String banner           // raw banner text – populated in Phase 2
-) {
-    // Compact constructor with defaults
-    public PortInfo {
-        status      = (status != null)      ? status      : "unknown";
-        serviceName = (serviceName != null) ? serviceName : "unknown";
-        banner      = (banner != null && !banner.isBlank()) ? banner.trim() : null;
+public class PortInfo {
+
+    private int port;
+    private boolean open;
+    private String status;       // open, closed, filtered
+    private String serviceName;  // future use
+    private String banner;       // future use
+
+    public PortInfo(int port, boolean open, String status) {
+        this.port = port;
+        this.open = open;
+        this.status = (status != null) ? status : "unknown";
+        this.serviceName = "unknown";
+        this.banner = null;
     }
 
-    // Convenience constructor for Phase 1
-    public PortInfo(int port, boolean open, String status) {
-        this(port, open, status, "unknown", null);
-    }
+    // Getters
+    public int getPort() { return port; }
+    public boolean isOpen() { return open; }
+    public String getStatus() { return status; }
+    public String getServiceName() { return serviceName; }
+    public String getBanner() { return banner; }
+
+    // Setters (needed for scanner)
+    public void setOpen(boolean open) { this.open = open; }
+    public void setStatus(String status) { this.status = status; }
+    public void setServiceName(String serviceName) { this.serviceName = serviceName; }
+    public void setBanner(String banner) { this.banner = banner; }
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder("Port " + port + ": " + status);
+
         if (open) {
-            if (!serviceName.equals("unknown")) {
+            if (!"unknown".equals(serviceName)) {
                 sb.append(" (").append(serviceName).append(")");
             }
             if (banner != null) {
                 sb.append(" → ").append(banner);
             }
         }
+
         return sb.toString();
     }
 }
+
+/**
+ * IMPROVEMENTS (Future Enhancements):
+ * 1. Revert to immutable record once scanning pipeline is fully functional.
+ *
+ * 2. Add port state enum instead of string status for type safety.
+ *
+ * 3. Include latency measurement for each port connection.
+ *
+ * 4. Extend with protocol-specific metadata (HTTP headers, TLS info).
+ *
+ * 5. Add JSON serialization support for reporting.
+ */

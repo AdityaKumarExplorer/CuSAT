@@ -14,7 +14,7 @@ public class ScanResult {
     private final List<PortInfo> ports = new ArrayList<>();
     private long durationMs;
     private String scanTimestamp;
-    private RiskLevel overallRisk = RiskLevel.UNKNOWN;
+    private RiskLevel overallRisk = RiskLevel.LOW; // ✅ safe default
     private final List<Finding> findings = new ArrayList<>();
 
     public ScanResult(String target) {
@@ -32,11 +32,25 @@ public class ScanResult {
 
     // Setters / mutators
     public void setHostReachable(boolean reachable) { this.hostReachable = reachable; }
-    public void addPort(PortInfo port)              { ports.add(port); }
+
+    public void addPort(PortInfo port) {
+        if (port != null) ports.add(port);
+    }
+
+    public void setPorts(List<PortInfo> newPorts) {
+        ports.clear();
+        if (newPorts != null) {
+            ports.addAll(newPorts);
+        }
+    }
+
     public void setDurationMs(long ms)              { this.durationMs = ms; }
     public void setScanTimestamp(String ts)         { this.scanTimestamp = ts; }
     public void setOverallRisk(RiskLevel level)     { this.overallRisk = level; }
-    public void addFinding(Finding finding)         { findings.add(finding); }
+
+    public void addFinding(Finding finding) {
+        if (finding != null) findings.add(finding);
+    }
 
     @Override
     public String toString() {
@@ -45,7 +59,7 @@ public class ScanResult {
         sb.append("  Reachable: ").append(hostReachable).append("\n");
         sb.append("  Duration:  ").append(durationMs).append(" ms\n");
         sb.append("  Time:      ").append(scanTimestamp != null ? scanTimestamp : "N/A").append("\n");
-        sb.append("  Risk:      ").append(overallRisk.getColoredLabel()).append("\n");
+        sb.append("  Risk:      ").append(overallRisk).append("\n"); // ✅ safe
         sb.append("  Open ports: ").append(ports.stream().filter(PortInfo::isOpen).count()).append("\n");
 
         if (!ports.isEmpty()) {
@@ -60,9 +74,19 @@ public class ScanResult {
 
         return sb.toString();
     }
-
-    public void setPorts(List<PortInfo> ports2) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'setPorts'");
-    }
 }
+
+/**
+ * IMPROVEMENTS (Future Enhancements):
+ * 1. Add detailed port categorization (open, closed, filtered).
+ *
+ * 2. Include scan metadata such as scan type and thread usage.
+ *
+ * 3. Add serialization support (JSON/XML export).
+ *
+ * 4. Improve risk scoring integration with weighted metrics.
+ *
+ * 5. Support aggregation for multi-target scans.
+ *
+ * 6. Replace simple string timestamp with proper DateTime object.
+ */

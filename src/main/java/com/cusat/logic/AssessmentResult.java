@@ -1,11 +1,11 @@
 package com.cusat.logic;
 
+import com.cusat.model.PortInfo;
 import com.cusat.model.ScanResult;
 
 /**
  * Final assessment output after rules and scoring.
- * In Phase 1: thin wrapper around ScanResult.
- * Phase 2: can include summary, recommendations, export data.
+ * Acts as a wrapper for ScanResult with a summarized view.
  */
 public class AssessmentResult {
 
@@ -18,15 +18,22 @@ public class AssessmentResult {
     }
 
     private String generateSummary() {
-        if (!scanResult.isHostReachable()) {
+
+        if (scanResult == null || !scanResult.isHostReachable()) {
             return "Host unreachable – no assessment performed.";
         }
 
-        long openPorts = scanResult.getPorts().stream().filter(PortInfo::isOpen).count();
-        String risk = scanResult.getOverallRisk().getColoredLabel();
+        long openPorts = scanResult.getPorts()
+                .stream()
+                .filter(PortInfo::isOpen)
+                .count();
 
-        return String.format("Scan complete: %d open ports | Overall Risk: %s",
-                openPorts, risk);
+        String risk = scanResult.getOverallRisk().toString(); // no color for summary
+
+        return String.format(
+                "Scan complete: %d open ports | Overall Risk: %s",
+                openPorts, risk
+        );
     }
 
     public ScanResult getScanResult() {
@@ -41,4 +48,12 @@ public class AssessmentResult {
     public String toString() {
         return summary + "\n" + scanResult;
     }
+
+    /**
+     * IMPROVEMENTS:
+     * 1. Add recommendation aggregation.
+     * 2. Provide JSON/DTO output for APIs.
+     * 3. Include risk breakdown (HIGH/MEDIUM counts).
+     * 4. Integrate with web dashboard layer.
+     */
 }

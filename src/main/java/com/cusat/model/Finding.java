@@ -2,14 +2,14 @@ package com.cusat.model;
 
 /**
  * Represents one detected finding / vulnerability / security note.
- * Minimal in Phase 1, expanded in Phase 2 with rule engine output.
  */
 public record Finding(
     String description,
-    String portOrService,       // e.g. "445/tcp", "SMB"
+    String portOrService,
     RiskLevel severity,
     String recommendation
 ) {
+
     // Convenience constructors
     public Finding(String description, RiskLevel severity) {
         this(description, "N/A", severity, "");
@@ -21,7 +21,22 @@ public record Finding(
 
     @Override
     public String toString() {
-        return severity.getColoredLabel() + " " + description +
-               (portOrService != null && !portOrService.equals("N/A") ? " (" + portOrService + ")" : "");
+        return severity + " " + description +
+               (portOrService != null && !portOrService.equals("N/A")
+                   ? " (" + portOrService + ")"
+                   : "");
     }
 }
+
+/**
+ * IMPROVEMENTS (Future Enhancements):
+ * 1. Add unique finding IDs for tracking and correlation.
+ *
+ * 2. Support structured output (JSON) for integration with SIEM tools.
+ *
+ * 3. Enhance severity representation with scoring (CVSS-like).
+ *
+ * 4. Include timestamps for when findings were detected.
+ *
+ * 5. Add category tags (network, web, system) for better classification.
+ */
