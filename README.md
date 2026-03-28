@@ -7,11 +7,10 @@ Java-based rule-driven network exposure assessment tool for ethical, local syste
 
 ## 📌 Overview
 
-CuSAT is a **Java-based defensive cybersecurity tool** designed to analyze **network exposure on the local machine**.
+CuSAT is a **Java-based defensive cybersecurity tool** designed to analyze **network exposure**.
 
-This is a **Self-Scan Edition**, meaning:
+This is a **Self Understanding Edition**, meaning:
 
-* It scans **only the user’s own system (127.0.0.1)**
 * It avoids intrusive or exploitative techniques
 * It focuses on **learning and defensive awareness**
 
