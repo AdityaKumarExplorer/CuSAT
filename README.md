@@ -1,4 +1,4 @@
-# 🛡️ CuSAT – Custom Security Assessment Tool (Self-Scan Edition)
+# 🛡️ CuSAT – Custom Security Assessment Tool
 
 **Tagline:**
 Java-based rule-driven network exposure assessment tool for ethical, local system security analysis.
