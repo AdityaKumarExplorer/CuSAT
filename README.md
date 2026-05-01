@@ -1,289 +1,334 @@
-<<<<<<< Updated upstream
 # 🛡️ CuSAT – Custom Security Assessment Tool
-=======
-# CuSAT
->>>>>>> Stashed changes
 
 Custom Security Assessment Tool
 
 CuSAT is a Java-based defensive security assessment project focused on identifying exposed TCP services, applying a rule-based risk engine, and producing readable scan reports. It is intentionally non-exploitative: the project performs exposure discovery and reporting, not payload delivery or exploitation.
 
+---
+
+## 📋 Table of Contents
+
+- [Current Scope](#current-scope)
+- [Project Structure](#project-structure)
+- [What the Tool Does](#what-the-tool-does)
+- [Input Rules](#input-rules)
+- [Default Port Coverage](#default-port-coverage)
+- [Report Output](#report-output)
+- [Information Collected](#information-collected-by-the-scanner)
+- [Detection Notice](#can-other-machines-detect-the-scan)
+- [How to Run](#how-to-run)
+- [Web GUI](#web-gui)
+- [Testing](#testing)
+- [Current Limitations](#current-limitations)
+- [Roadmap](#roadmap)
+- [Ethical Constraints](#ethical-constraints)
+- [License](#license)
+- [Author](#author)
+- [Disclaimer](#disclaimer)
+
+---
+
 ## Current Scope
 
-<<<<<<< Updated upstream
-CuSAT is a **Java-based defensive cybersecurity tool** designed to analyze **network exposure**.
+This repository supports:
 
-This is a **Self Understanding Edition**, meaning:
-
-* It avoids intrusive or exploitative techniques
-* It focuses on **learning and defensive awareness**
-=======
-This repository is still an early prototype, but the local `CuSAT - Copy` build now supports:
-- IPv4-only CLI input
-- concurrent TCP connect scanning
-- rule-based finding generation
-- console reporting
-- text report export
-- a lightweight browser GUI served by a local Java HTTP server
-- starter JUnit coverage for key flows
+- ✅ IPv4-only CLI input
+- ✅ Concurrent TCP connect scanning
+- ✅ Rule-based finding generation
+- ✅ Console reporting
+- ✅ Text report export
+- ✅ Lightweight browser GUI served by a local Java HTTP server
+- ✅ JUnit coverage for key flows
 
 ## Project Structure
 
-```text
-src/main/java/com/cusat
-├── MainApp.java
-├── core
-├── input
-├── logic
-├── model
-├── report
-├── scanner
-├── util
-└── web
->>>>>>> Stashed changes
-
-src/main/resources/web
-├── index.html
-├── styles.css
-└── app.js
+```
+CuSAT/
+├── src/
+│   ├── main/
+│   │   ├── java/com/cusat/
+│   │   │   ├── MainApp.java
+│   │   │   ├── core/           # Scan orchestration
+│   │   │   ├── input/          # Input validation
+│   │   │   ├── logic/          # Risk scoring & rules
+│   │   │   ├── model/          # Data models
+│   │   │   ├── report/         # Report generation
+│   │   │   ├── scanner/        # Network scanning
+│   │   │   ├── util/           # Utilities
+│   │   │   └── web/            # Web GUI server
+│   │   └── resources/web/
+│   │       ├── index.html
+│   │       ├── styles.css
+│   │       └── app.js
+│   └── test/java/com/cusat/    # Unit tests
+├── output/reports/             # Generated reports
+├── pom.xml                     # Maven configuration
+├── README.md
+└── LICENSE
 ```
 
 ## What the Tool Does
 
-1. Accepts an IPv4 address from the CLI or web GUI.
-2. Validates the input and rejects unsupported values.
-3. Performs host discovery using `isReachable()` with TCP fallback probes.
-4. Scans a bounded list of common TCP ports using a thread pool.
-5. Applies hardcoded risk rules to the open-port data.
-6. Calculates an overall risk value.
-7. Prints the report and writes a text copy to disk.
+1. Accepts an IPv4 address from the CLI or web GUI
+2. Validates the input and rejects unsupported values
+3. Performs host discovery using `isReachable()` with TCP fallback probes
+4. Scans a bounded list of common TCP ports using a thread pool
+5. Applies hardcoded risk rules to the open-port data
+6. Calculates an overall risk value
+7. Prints the report and writes a text copy to disk
 
 ## Input Rules
 
-The current build accepts:
-- `help`
-- `exit`
-- IPv4 addresses such as `127.0.0.1` or `192.168.1.10`
+**Accepts:**
+- `help` - Display help information
+- `exit` - Exit the application
+- IPv4 addresses (e.g., `127.0.0.1`, `192.168.1.10`)
 
-The current build does not accept:
-- hostnames
-- domain names
+**Does NOT accept:**
+- Hostnames (e.g., `localhost`, `example.com`)
+- Domain names
 - URLs
 
 ## Default Port Coverage
 
 The default scan profile includes:
 
-`21, 22, 23, 25, 53, 80, 110, 135, 139, 143, 443, 445, 993, 995, 1433, 3306, 3389, 5900, 8080`
+```
+21, 22, 23, 25, 53, 80, 110, 135, 139, 143, 443, 445, 993, 995, 1433, 3306, 3389, 5900, 8080
+```
+
+| Port | Service |
+|------|---------|
+| 21 | FTP |
+| 22 | SSH |
+| 23 | Telnet |
+| 25 | SMTP |
+| 53 | DNS |
+| 80 | HTTP |
+| 110 | POP3 |
+| 135 | RPC |
+| 139 | NetBIOS |
+| 143 | IMAP |
+| 443 | HTTPS |
+| 445 | SMB |
+| 993 | IMAPS |
+| 995 | POP3S |
+| 1433 | MSSQL |
+| 3306 | MySQL |
+| 3389 | RDP |
+| 5900 | VNC |
+| 8080 | HTTP-Alt |
 
 ## Report Output
 
-Text reports are written to:
-
-```text
+**Location:**
+```
 output/reports/
 ```
 
-Filename format:
-
-```text
+**Filename format:**
+```
 Report(CuSAT)[IP][date][time].txt
 ```
 
-Example:
-
-```text
+**Example:**
+```
 Report(CuSAT)[127.0.0.1][2026-04-30][16-09-37].txt
 ```
 
 ## Information Collected by the Scanner
 
 The current modules can acquire:
-- target IPv4 address
-- host reachability state
-- scan timestamp
-- scan duration
-- open, closed, or filtered status per scanned TCP port
-- inferred service name from known port mappings
-- rule-engine findings
-- overall risk classification
-- timeline events during execution
+
+- Target IPv4 address
+- Host reachability state
+- Scan timestamp
+- Scan duration
+- Open, closed, or filtered status per scanned TCP port
+- Inferred service name from known port mappings
+- Rule-engine findings
+- Overall risk classification (Low/Medium/High/Critical)
+- Timeline events during execution
 
 ## Can Other Machines Detect the Scan?
 
-Yes, potentially.
+**Yes, potentially.**
 
-What can be noticed by another machine:
-- repeated TCP connection attempts to the scanned ports
-- timing patterns from concurrent scanning
-- connection attempts in local firewall, IDS, or server logs
-- HTTP/TLS probe behavior in future expanded modules
+### What can be noticed by another machine:
+- Repeated TCP connection attempts to scanned ports
+- Timing patterns from concurrent scanning
+- Connection attempts in local firewall, IDS, or server logs
+- HTTP/TLS probe behavior (future modules)
 
-What is not happening in this project:
-- raw-packet stealth scanning
-- exploit delivery
-- credential attacks
-- evasion logic
+### What is NOT happening:
+- Raw-packet stealth scanning
+- Exploit delivery
+- Credential attacks
+- Evasion logic
 
-So the current scanner is detectable in the normal way many TCP connect scans are detectable.
+The scanner is detectable in the normal way many TCP connect scans are detectable.
 
 ## How to Run
 
-### CLI with Maven
+### Prerequisites
 
-```powershell
-cd "C:\Personal Corner\College\Java Notes & Projects\CuSAT - Copy"
+- Java 11 or higher
+- Maven 3.6+ (recommended)
+
+### Option 1: CLI with Maven (Recommended)
+
+```bash
+# Clone the repository
+git clone https://github.com/AdityaKumarExplorer/CuSAT.git
+cd CuSAT
+
+# Compile and run tests
+mvn clean compile
 mvn test
+
+# Run the application
 mvn exec:java
 ```
 
-### CLI without Maven
+### Option 2: CLI without Maven
+
+```bash
+# Compile all Java files
+javac -d out $(find src/main/java -name "*.java")
+
+# Run the application
+java -cp out com.cusat.MainApp
+```
+
+### Option 3: Windows PowerShell (without Maven)
 
 ```powershell
-cd "C:\Personal Corner\College\Java Notes & Projects\CuSAT - Copy"
+# Compile
 $files = Get-ChildItem src\main\java -Recurse -Filter *.java | ForEach-Object { $_.FullName }
 if (Test-Path out) { Remove-Item out -Recurse -Force }
 New-Item -ItemType Directory -Path out | Out-Null
 javac -d out $files
+
+# Run
 java -cp out com.cusat.MainApp
 ```
 
-### Web GUI
+## Web GUI
 
-Run the web server:
+### Start the web server:
 
-```powershell
-cd "C:\Personal Corner\College\Java Notes & Projects\CuSAT - Copy"
-mvn test
+```bash
 mvn exec:java@run-web-gui
 ```
 
-Then open:
+### Open in your browser:
 
-```text
+```
 http://localhost:8085
 ```
 
-PowerShell note:
-- use `mvn exec:java@run-web-gui`
-- this avoids the argument parsing issue that can happen with `-Dexec.mainClass=...`
+### How it works:
 
-## How the Webpage Connects to the Project
+1. `WebGuiServer` starts a local HTTP server on port `8085`
+2. `index.html` serves a browser form for IPv4 input
+3. `app.js` sends the entered IPv4 address to `/api/scan`
+4. The `/api/scan` handler creates a `ScanRequest`
+5. `ScanOrchestrator` runs the existing scanner pipeline
+6. The server returns scan results as JSON
+7. The webpage renders ports, findings, and the timeline
 
-The GUI is a thin frontend over the Java scanner:
-
-1. `WebGuiServer` starts a local HTTP server on port `8085`.
-2. `index.html` serves a browser form for IPv4 input.
-3. `app.js` sends the entered IPv4 address to `/api/scan`.
-4. The `/api/scan` handler creates a `ScanRequest`.
-5. `ScanOrchestrator` runs the existing scanner pipeline.
-6. The server returns scan results as JSON.
-7. The webpage renders ports, findings, and the timeline.
-
-This means the webpage is not a separate scanner. It is only a user interface over the same Java scanning logic.
-
-If the property-based command form is used in some PowerShell environments, argument parsing can break the `-Dexec.mainClass=...` override. The dedicated Maven execution `mvn exec:java@run-web-gui` avoids that issue.
-
-## Java Project Setup Notes
-
-If your editor says something like:
-
-```text
-ScanOrchestrator.java is a non-project file, only syntax errors are reported
-```
-
-use the project root folder and not an individual file folder.
-
-This repository now includes:
-- `pom.xml`
-- `.project`
-- `.classpath`
-- `.settings/org.eclipse.jdt.core.prefs`
-- `.vscode/settings.json`
-- `.vscode/extensions.json`
-
-These help Eclipse-compatible tooling and VS Code recognize the folder as a Java/Maven project.
-
-## Ethical Constraints
-
-Use this tool only on systems and networks you own or are explicitly authorized to assess.
-
-Recommended constraints for the project:
-- no exploit modules
-- no persistence features
-- no password spraying or brute force features
-- no stealth/evasion additions
-- no default wide-area scanning behavior
-- explicit user-visible warnings and authorization expectations
-
-## License Recommendation
-
-This project currently has no license file, which means reuse rights are unclear.
-
-Recommended choices:
-- `MIT` for the simplest student-project licensing
-- `Apache-2.0` if you want explicit patent language
-- `GPL-3.0` if you want derivatives to remain open source
-
-For this project, `MIT` is the simplest recommendation.
-
-To implement it:
-1. Add a `LICENSE` file at the repository root.
-2. Add a short license section to the README.
-3. Keep author attribution in the repo metadata or documentation.
+> **Note:** The webpage is only a user interface over the same Java scanning logic, not a separate scanner.
 
 ## Testing
 
-The current local test suite covers:
-- IPv4-only input validation
-- risk scoring behavior
-- report filename format
-- local open-port detection
-- network utility behavior
+### Run all tests:
 
-Run:
-
-```powershell
+```bash
 mvn test
 ```
 
+### Test coverage:
+
+- ✅ IPv4-only input validation
+- ✅ Risk scoring behavior
+- ✅ Report filename format
+- ✅ Local open-port detection
+- ✅ Network utility behavior
+
 ## Current Limitations
 
-- TCP connect scanning only
-- no UDP scanning
-- no authenticated checks
-- no CVE mapping
-- no PDF or DOCX report export from scan results yet
-- no persistent database or dashboard backend
-- hostnames and URLs are intentionally blocked in this build
+- TCP connect scanning only (no UDP)
+- No authenticated checks
+- No CVE mapping
+- No PDF or DOCX report export
+- No persistent database or dashboard backend
+- Hostnames and URLs are intentionally blocked
 
-## Phase 2 Priorities
+## Roadmap
 
-1. Externalize rules into JSON or configuration.
-2. Integrate banner grabbing and deeper service fingerprinting.
-3. Add structured JSON output as the reporting source of truth.
-4. Generate PDF and DOCX reports from structured result data.
-5. Add explicit authorization safeguards for non-local scanning.
-6. Expand the web interface into a fuller dashboard.
+### Phase 2 Priorities
 
-## Viva Preparation
+- [ ] Externalize rules into JSON or configuration files
+- [ ] Integrate banner grabbing and deeper service fingerprinting
+- [ ] Add structured JSON output as reporting source of truth
+- [ ] Generate PDF and DOCX reports from structured result data
+- [ ] Add explicit authorization safeguards for non-local scanning
+- [ ] Expand web interface into a fuller dashboard
 
-If you need to defend the project in a demo or review, be ready to explain:
-- why `ScanOrchestrator` exists instead of putting everything in `MainApp`
-- why `ScanRequest` is used as a wrapper object
-- why TCP connect scanning is detectable
-- why `PortScanner` uses a thread pool in the updated build
-- why `RiskScorer` had to be fixed
-- why hostnames and URLs are blocked in the current build
-- how the web GUI is only a frontend over the same Java scan pipeline
+## Ethical Constraints
 
-Detailed viva-style questions and answers are documented in:
-[docs/CuSAT-Project-Guide.md](</C:/Personal Corner/College/Java Notes & Projects/CuSAT - Copy/docs/CuSAT-Project-Guide.md>)
+> **⚠️ IMPORTANT:** Use this tool only on systems and networks you own or are explicitly authorized to assess.
+
+### Project Constraints:
+
+- ❌ No exploit modules
+- ❌ No persistence features
+- ❌ No password spraying or brute force features
+- ❌ No stealth/evasion additions
+- ❌ No default wide-area scanning behavior
+- ✅ Explicit user-visible warnings and authorization expectations
+
+## License
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+```
+MIT License
+
+Copyright (c) 2026 Aditya Kumar
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
 
 ## Author
 
-Aditya Kumar
+**Aditya Kumar**
+
+- GitHub: [@AdityaKumarExplorer](https://github.com/AdityaKumarExplorer)
+- Project: [CuSAT](https://github.com/AdityaKumarExplorer/CuSAT)
 
 ## Disclaimer
 
-CuSAT is a defensive learning project for authorized exposure assessment and reporting only.
+CuSAT is a **defensive learning project** for authorized exposure assessment and reporting only.
+
+The author is not responsible for any misuse of this tool. Users are solely responsible for complying with all applicable laws and obtaining proper authorization before using this tool on any network or system.
+
+---
+
+*Made for educational and defensive security purposes.*
