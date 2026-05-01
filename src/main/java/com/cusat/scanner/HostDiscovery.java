@@ -2,25 +2,30 @@ package com.cusat.scanner;
 
 import com.cusat.model.ScanResult;
 import com.cusat.report.TimelineBuilder;
+import com.cusat.util.Constants;
 import com.cusat.util.TimeUtils;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.util.List;
 
 /**
- * Checks if the target host is reachable.
- * Uses ICMP (isReachable) + TCP fallback (port 80).
+ * Checks whether the target host appears reachable.
+ * Uses ICMP where available and several TCP fallbacks to reduce false negatives.
  */
 public class HostDiscovery implements IScanner {
 
     private final int timeoutMs;
+    private final List<Integer> probePorts;
 
     public HostDiscovery() {
-        this.timeoutMs = 2000; // ✅ fixed default (no dependency on Constants)
+        this(Constants.DEFAULT_CONNECT_TIMEOUT_MS);
     }
 
     public HostDiscovery(int timeoutMs) {
         this.timeoutMs = Math.max(500, timeoutMs);
+        this.probePorts = List.of(80, 443, 22, 445, 3389);
     }
 
     @Override
@@ -35,17 +40,11 @@ public class HostDiscovery implements IScanner {
 
         try {
             InetAddress address = InetAddress.getByName(target);
-
-            // ✅ Attempt ICMP reachability
             reachable = address.isReachable(timeoutMs);
 
-            // 🔥 Fallback: TCP connect (important!)
             if (!reachable) {
-                try (Socket socket = new Socket(target, 80)) {
-                    reachable = true;
-                } catch (Exception ignored) {}
+                reachable = probeTcpPorts(target);
             }
-
         } catch (Exception e) {
             TimelineBuilder.addEvent("Host discovery error: " + e.getMessage());
         }
@@ -61,25 +60,17 @@ public class HostDiscovery implements IScanner {
 
         return result;
     }
-}
 
-/**
- * IMPROVEMENTS (Future Enhancements):
- * 1. Replace InetAddress.isReachable() with raw ICMP or NIO-based probing for
- *    more accurate host discovery (current method is OS-dependent and unreliable).
- *
- * 2. Implement multi-port TCP fallback (e.g., 80, 443, 22) instead of a single
- *    port check to improve detection accuracy.
- *
- * 3. Add configurable retry mechanism to reduce false negatives in unstable networks.
- *
- * 4. Integrate parallel probing to speed up host discovery in multi-target scans.
- *
- * 5. Improve logging by differentiating between DNS resolution failure,
- *    timeout, and network unreachable conditions.
- *
- * 6. Add IPv6 support for broader compatibility.
- *
- * 7. Introduce configurable timeout via external config (config.properties)
- *    instead of hardcoding values.
- */
+    private boolean probeTcpPorts(String target) {
+        for (int port : probePorts) {
+            try (Socket socket = new Socket()) {
+                socket.connect(new InetSocketAddress(target, port), timeoutMs);
+                TimelineBuilder.addEvent("Host reachability confirmed via TCP " + port);
+                return true;
+            } catch (Exception ignored) {
+            }
+        }
+
+        return false;
+    }
+}

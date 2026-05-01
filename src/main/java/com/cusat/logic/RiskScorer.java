@@ -12,7 +12,11 @@ public class RiskScorer {
 
     public void score(ScanResult result) {
 
-        if (result == null || !result.isHostReachable()) {
+        if (result == null) {
+            return;
+        }
+
+        if (!result.isHostReachable()) {
             result.setOverallRisk(RiskLevel.UNKNOWN);
             return;
         }
@@ -21,12 +25,13 @@ public class RiskScorer {
         int medium = 0;
         int critical = 0;
 
-        for (Finding f : result.getFindings()) {
-            switch (f.severity()) {
+        for (Finding finding : result.getFindings()) {
+            switch (finding.severity()) {
                 case CRITICAL -> critical++;
                 case HIGH -> high++;
                 case MEDIUM -> medium++;
-                default -> {}
+                default -> {
+                }
             }
         }
 
@@ -34,7 +39,7 @@ public class RiskScorer {
 
         if (critical > 0) {
             overall = RiskLevel.CRITICAL;
-        } else if (high >= 2) {
+        } else if (high >= 1) {
             overall = RiskLevel.HIGH;
         } else if (medium >= 1) {
             overall = RiskLevel.MEDIUM;
@@ -45,16 +50,3 @@ public class RiskScorer {
         result.setOverallRisk(overall);
     }
 }
-
-/**
- * IMPROVEMENTS (Future Enhancements):
- * 1. Introduce weighted scoring system instead of simple counting.
- *
- * 2. Integrate CVSS-based risk scoring.
- *
- * 3. Add contextual scoring (internal vs external exposure).
- *
- * 4. Support configurable thresholds via config.properties.
- *
- * 5. Aggregate risk across multiple hosts.
- */

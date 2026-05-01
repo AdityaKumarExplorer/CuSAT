@@ -5,83 +5,98 @@ import com.cusat.model.ScanResult;
 import com.cusat.util.Constants;
 import com.cusat.util.TimeUtils;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
 public class TextReportWriter {
 
+    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH-mm-ss");
+
     public void write(ScanResult result) {
+        System.out.print(buildReport(result));
+    }
+
+    public Path writeToFile(ScanResult result, Path outputDirectory) throws IOException {
+        Files.createDirectories(outputDirectory);
+
+        Path reportFile = outputDirectory.resolve(buildReportFileName(result.getTarget()));
+        Files.writeString(reportFile, buildReport(result), StandardCharsets.UTF_8);
+        return reportFile;
+    }
+
+    public String buildReportFileName(String target) {
+        LocalDateTime now = LocalDateTime.now();
+        return String.format(
+                "Report(CuSAT)[%s][%s][%s].txt",
+                target,
+                DATE_FORMAT.format(now),
+                TIME_FORMAT.format(now)
+        );
+    }
+
+    public String buildReport(ScanResult result) {
         if (result == null) {
-            System.out.println("No scan result available.");
-            return;
+            return "No scan result available." + System.lineSeparator();
         }
 
-        System.out.println(Constants.REPORT_HEADER);
+        String newline = System.lineSeparator();
+        StringBuilder builder = new StringBuilder();
 
-        System.out.println("Target:        " + result.getTarget());
-        System.out.println("Reachable:     " + (result.isHostReachable() ? "Yes" : "No"));
-        System.out.println("Scan Time:     " + 
-            (result.getScanTimestamp() != null ? result.getScanTimestamp() : "N/A"));
-        System.out.println("Duration:      " + TimeUtils.formatDuration(result.getDurationMs()));
-        System.out.println("Overall Risk:  " + result.getOverallRisk().getColoredLabel());
-
-        System.out.println();
+        builder.append(Constants.REPORT_HEADER).append(newline);
+        builder.append("Target:        ").append(result.getTarget()).append(newline);
+        builder.append("Reachable:     ").append(result.isHostReachable() ? "Yes" : "No").append(newline);
+        builder.append("Scan Time:     ")
+                .append(result.getScanTimestamp() != null ? result.getScanTimestamp() : "N/A")
+                .append(newline);
+        builder.append("Duration:      ").append(TimeUtils.formatDuration(result.getDurationMs())).append(newline);
+        builder.append("Overall Risk:  ").append(result.getOverallRisk()).append(newline).append(newline);
 
         long openCount = result.getPorts().stream()
                 .filter(PortInfo::isOpen)
                 .count();
 
-        System.out.println("Open Ports:    " + openCount + " / " + result.getPorts().size());
-        System.out.println("--------------------------------------------------");
+        builder.append("Open Ports:    ").append(openCount).append(" / ").append(result.getPorts().size()).append(newline);
+        builder.append("--------------------------------------------------").append(newline);
 
         if (openCount == 0) {
-            System.out.println("  No open ports detected.");
+            builder.append("  No open ports detected.").append(newline);
         } else {
-            System.out.println("  Open ports details:");
+            builder.append("  Open ports details:").append(newline);
 
-            for (PortInfo p : result.getPorts()) {
-                if (p.isOpen()) {
-
+            for (PortInfo portInfo : result.getPorts()) {
+                if (portInfo.isOpen()) {
                     String line = String.format("  %-6d %-10s",
-                            p.getPort(),
-                            p.getStatus()
+                            portInfo.getPort(),
+                            portInfo.getStatus()
                     );
 
-                    if (!"unknown".equals(p.getServiceName())) {
-                        line += " " + p.getServiceName();
+                    if (!"unknown".equals(portInfo.getServiceName())) {
+                        line += " " + portInfo.getServiceName();
                     }
 
-                    if (p.getBanner() != null) {
-                        line += " → " + p.getBanner().trim();
+                    if (portInfo.getBanner() != null) {
+                        line += " -> " + portInfo.getBanner().trim();
                     }
 
-                    System.out.println(line);
+                    builder.append(line).append(newline);
                 }
             }
         }
 
-        System.out.println();
-
-        System.out.println("Findings Summary:");
+        builder.append(newline);
+        builder.append("Findings Summary:").append(newline);
         if (result.getFindings().isEmpty()) {
-            System.out.println("  No notable findings.");
+            builder.append("  No notable findings.").append(newline);
         } else {
-            result.getFindings().forEach(f -> System.out.println("  " + f));
+            result.getFindings().forEach(finding -> builder.append("  ").append(finding).append(newline));
         }
 
-        System.out.println(Constants.REPORT_FOOTER);
-        System.out.println();
+        builder.append(Constants.REPORT_FOOTER).append(newline).append(newline);
+        return builder.toString();
     }
 }
-
-    /**
-     * IMPROVEMENTS (Future Enhancements):
-     * 1. Replace console output with structured table formatting.
-     *
-     * 2. Add export to JSON, HTML, and PDF formats.
-     *
-     * 3. Integrate colored output toggle (for logs vs terminal).
-     *
-     * 4. Include sorting/filtering of findings.
-     *
-     * 5. Add grouping by severity level.
-     *
-     * 6. Integrate with web dashboard for visualization.
-     */

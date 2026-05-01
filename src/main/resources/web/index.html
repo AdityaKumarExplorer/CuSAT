@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CuSAT Web GUI</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<main class="page">
+    <section class="hero">
+        <p class="eyebrow">CuSAT Web Interface</p>
+        <h1>Run a local IPv4 exposure scan from the browser</h1>
+        <p class="intro">
+            This interface sends an IPv4 address to the local CuSAT web server and renders the returned findings,
+            ports, and timeline.
+        </p>
+    </section>
+
+    <section class="panel">
+        <form id="scan-form" class="scan-form">
+            <label for="ip">IPv4 Address</label>
+            <div class="input-row">
+                <input id="ip" name="ip" type="text" placeholder="127.0.0.1" autocomplete="off" required>
+                <button type="submit">Run Scan</button>
+            </div>
+            <p class="hint">Only IPv4 addresses are supported in this build.</p>
+        </form>
+        <div id="status" class="status"></div>
+    </section>
+
+    <section id="result" class="panel hidden">
+        <div class="summary-grid">
+            <article>
+                <h2>Target</h2>
+                <p id="target-value">-</p>
+            </article>
+            <article>
+                <h2>Reachable</h2>
+                <p id="reachable-value">-</p>
+            </article>
+            <article>
+                <h2>Duration</h2>
+                <p id="duration-value">-</p>
+            </article>
+            <article>
+                <h2>Overall Risk</h2>
+                <p id="risk-value">-</p>
+            </article>
+        </div>
+
+        <div class="details-grid">
+            <article>
+                <h2>Open Ports</h2>
+                <ul id="ports-list" class="list"></ul>
+            </article>
+            <article>
+                <h2>Findings</h2>
+                <ul id="findings-list" class="list"></ul>
+            </article>
+        </div>
+
+        <article>
+            <h2>Timeline</h2>
+            <ul id="timeline-list" class="list timeline"></ul>
+        </article>
+    </section>
+</main>
+
+<script src="/app.js"></script>
+</body>
+</html>

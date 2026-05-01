@@ -1,6 +1,7 @@
 package com.cusat;
 
 import com.cusat.core.ScanOrchestrator;
+import com.cusat.input.InputValidator;
 import com.cusat.input.ScanRequest;
 import com.cusat.model.ScanResult;
 
@@ -18,27 +19,28 @@ public class MainApp {
 
         while (true) {
             System.out.print("CuSAT> ");
-            String input = scanner.nextLine().trim();
+            String input = InputValidator.normalize(scanner.nextLine());
 
-            // Exit condition
-            if (input.equalsIgnoreCase("exit")) {
+            if (InputValidator.isExitCommand(input)) {
                 System.out.println("Exiting CuSAT...");
                 break;
             }
 
-            // Help command
-            if (input.equalsIgnoreCase("help")) {
+            if (InputValidator.isHelpCommand(input)) {
                 printHelp();
                 continue;
             }
 
-            // Validate input
             if (input.isEmpty()) {
-                System.out.println("Please enter a valid IP or hostname.");
+                System.out.println("Please enter a valid IPv4 address.");
                 continue;
             }
 
-            // Run scan
+            if (!InputValidator.isSupportedInput(input)) {
+                System.out.println("Unsupported input. Only 'help', 'exit', and IPv4 addresses are allowed.");
+                continue;
+            }
+
             ScanRequest request = new ScanRequest(input);
             request.setMaxThreads(10);
 
@@ -57,12 +59,14 @@ public class MainApp {
     private static void printHelp() {
         System.out.println("\n=== CuSAT Help ===");
         System.out.println("Usage:");
-        System.out.println("  Enter an IP address or hostname to scan.");
+        System.out.println("  Enter an IPv4 address to scan.");
         System.out.println("Commands:");
         System.out.println("  help  - Show this help menu");
         System.out.println("  exit  - Exit the program");
         System.out.println("\nExample:");
         System.out.println("  CuSAT> 127.0.0.1");
+        System.out.println("\nNote:");
+        System.out.println("  Hostnames, domain names, and URLs are not supported in this build.");
         System.out.println("=================================\n");
     }
 }

@@ -1,0 +1,147 @@
+:root {
+    --bg: #f4f1ea;
+    --panel: #fffdf8;
+    --ink: #1d2a33;
+    --muted: #5d6b75;
+    --accent: #0f766e;
+    --accent-dark: #115e59;
+    --border: #d8d1c2;
+    --shadow: 0 18px 42px rgba(40, 40, 40, 0.08);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Georgia, "Times New Roman", serif;
+    color: var(--ink);
+    background:
+        radial-gradient(circle at top right, rgba(15, 118, 110, 0.12), transparent 24%),
+        linear-gradient(180deg, #f0ebe1 0%, var(--bg) 100%);
+}
+
+.page {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 48px 20px 64px;
+}
+
+.hero {
+    margin-bottom: 28px;
+}
+
+.eyebrow {
+    margin: 0 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    font-size: 0.76rem;
+    color: var(--accent-dark);
+}
+
+h1, h2 {
+    margin: 0 0 12px;
+    font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+}
+
+h1 {
+    font-size: clamp(2rem, 4vw, 3.4rem);
+    line-height: 1.05;
+    max-width: 12ch;
+}
+
+.intro, .hint, .status {
+    color: var(--muted);
+}
+
+.panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    box-shadow: var(--shadow);
+    padding: 24px;
+    margin-bottom: 22px;
+}
+
+.scan-form label {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.input-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+input {
+    flex: 1 1 240px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    font-size: 1rem;
+}
+
+button {
+    border: 0;
+    border-radius: 14px;
+    padding: 14px 18px;
+    background: var(--accent);
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+button:hover {
+    background: var(--accent-dark);
+}
+
+.summary-grid,
+.details-grid {
+    display: grid;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+
+.summary-grid {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.details-grid {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.list {
+    margin: 0;
+    padding-left: 18px;
+}
+
+.list li {
+    margin-bottom: 8px;
+}
+
+.timeline li {
+    font-size: 0.95rem;
+}
+
+.status {
+    min-height: 22px;
+    margin-top: 14px;
+}
+
+.hidden {
+    display: none;
+}
+
+@media (max-width: 720px) {
+    .page {
+        padding: 28px 14px 42px;
+    }
+
+    .panel {
+        padding: 18px;
+        border-radius: 18px;
+    }
+}

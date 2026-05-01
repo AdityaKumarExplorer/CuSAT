@@ -1,0 +1,5 @@
+com\cusat\report\TextReportWriterTest.class
+com\cusat\util\NetworkUtilsTest.class
+com\cusat\logic\RuleEngineTest.class
+com\cusat\input\InputValidatorTest.class
+com\cusat\scanner\PortScannerTest.class

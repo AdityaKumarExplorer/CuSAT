@@ -3,6 +3,7 @@ package com.cusat.scanner;
 import com.cusat.model.PortInfo;
 import com.cusat.model.ScanResult;
 import com.cusat.report.TimelineBuilder;
+import com.cusat.util.Constants;
 import com.cusat.util.TimeUtils;
 
 import java.net.InetSocketAddress;
@@ -10,19 +11,31 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
- * Performs TCP connect scan on a list of ports.
- * Phase 1: simple working version (no banner/service detection yet).
+ * Performs TCP connect scanning against a list of ports.
  */
 public class PortScanner implements IScanner {
 
     private final List<Integer> portsToScan;
     private final int timeoutMs;
+    private final int maxThreads;
+    private final ServiceDetector serviceDetector;
 
     public PortScanner(List<Integer> ports) {
-        this.portsToScan = (ports != null && !ports.isEmpty()) ? ports : getDefaultPorts();
-        this.timeoutMs = 2000; // safe default
+        this(ports, Constants.DEFAULT_CONNECT_TIMEOUT_MS, Constants.DEFAULT_THREAD_POOL_SIZE);
+    }
+
+    public PortScanner(List<Integer> ports, int timeoutMs, int maxThreads) {
+        this.portsToScan = (ports != null && !ports.isEmpty()) ? new ArrayList<>(ports) : getDefaultPorts();
+        this.timeoutMs = Math.max(250, timeoutMs);
+        this.maxThreads = Math.max(1, Math.min(maxThreads, this.portsToScan.size()));
+        this.serviceDetector = new ServiceDetector();
     }
 
     @Override
@@ -33,21 +46,8 @@ public class PortScanner implements IScanner {
         ScanResult result = new ScanResult(target);
         result.setScanTimestamp(TimeUtils.getCurrentTimestamp());
 
-        List<PortInfo> portResults = new ArrayList<>();
-
         TimelineBuilder.addEvent("Starting port scan on " + target);
-
-        for (int port : portsToScan) {
-            PortInfo info = checkPort(target, port);
-            portResults.add(info);
-
-            // 🔥 Print open ports immediately (useful for demo)
-            if (info.isOpen()) {
-                System.out.println("[+] Open port: " + port);
-            }
-        }
-
-        result.setPorts(portResults);
+        result.setPorts(scanPorts(target));
         result.setDurationMs(TimeUtils.getElapsedMillis(start));
 
         TimelineBuilder.addEvent("Port scan completed in " +
@@ -56,18 +56,53 @@ public class PortScanner implements IScanner {
         return result;
     }
 
+    private List<PortInfo> scanPorts(String target) {
+        ExecutorService executor = Executors.newFixedThreadPool(maxThreads);
+        List<Future<PortInfo>> futures = new ArrayList<>();
+
+        try {
+            for (int port : portsToScan) {
+                futures.add(executor.submit(createPortTask(target, port)));
+            }
+
+            List<PortInfo> results = new ArrayList<>(portsToScan.size());
+            for (Future<PortInfo> future : futures) {
+                results.add(future.get());
+            }
+            return results;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            TimelineBuilder.addEvent("Port scan interrupted");
+            return new ArrayList<>();
+        } catch (ExecutionException e) {
+            String message = (e.getCause() != null) ? e.getCause().getMessage() : e.getMessage();
+            TimelineBuilder.addEvent("Port scan task failed: " + message);
+            return new ArrayList<>();
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    private Callable<PortInfo> createPortTask(String target, int port) {
+        return () -> {
+            PortInfo info = checkPort(target, port);
+            if (info.isOpen()) {
+                System.out.println("[+] Open port: " + port);
+            }
+            return info;
+        };
+    }
+
     private PortInfo checkPort(String host, int port) {
 
         PortInfo info = new PortInfo(port, false, "closed");
 
         try (Socket socket = new Socket()) {
-
             socket.connect(new InetSocketAddress(host, port), timeoutMs);
 
-            // ✅ If connection succeeds → port is open
             info.setOpen(true);
             info.setStatus("open");
-
+            info.setServiceName(serviceDetector.detect(info).name());
         } catch (SocketTimeoutException e) {
             info.setStatus("filtered");
         } catch (Exception e) {
@@ -77,38 +112,7 @@ public class PortScanner implements IScanner {
         return info;
     }
 
-    // 🔧 Temporary default ports (avoids Constants dependency)
     private List<Integer> getDefaultPorts() {
-        List<Integer> ports = new ArrayList<>();
-        ports.add(21);
-        ports.add(22);
-        ports.add(23);
-        ports.add(25);
-        ports.add(53);
-        ports.add(80);
-        ports.add(110);
-        ports.add(139);
-        ports.add(143);
-        ports.add(443);
-        ports.add(445);
-        ports.add(3389);
-        return ports;
+        return new ArrayList<>(Constants.COMMON_PORTS);
     }
 }
-
-/**
- * IMPROVEMENTS (Future Enhancements):
- * 1. Introduce multithreading using ExecutorService for faster scanning.
- *
- * 2. Integrate BannerGrabber for service identification.
- *
- * 3. Add ServiceDetector using Strategy pattern for modular detection.
- *
- * 4. Improve accuracy by implementing SYN scan (raw sockets) where possible.
- *
- * 5. Add retry mechanism for better reliability in unstable networks.
- *
- * 6. Externalize port lists and timeout configs via config.properties.
- *
- * 7. Add rate limiting to reduce detection risk.
- */

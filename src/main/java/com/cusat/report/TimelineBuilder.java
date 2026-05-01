@@ -11,13 +11,13 @@ import java.util.List;
  */
 public class TimelineBuilder {
 
-    // ✅ Thread-safe list
     private static final List<String> events = Collections.synchronizedList(new ArrayList<>());
+    private static final String SEPARATOR = "----------------------------------------";
 
     public static void addEvent(String event) {
 
         if (event == null || event.isBlank()) {
-            return; // ignore bad input
+            return;
         }
 
         String timestamp = TimeUtils.getCurrentTimestamp();
@@ -36,31 +36,16 @@ public class TimelineBuilder {
         }
 
         System.out.println("\nScan Timeline:");
-        System.out.println("────────────────────────────────────────");
+        System.out.println(SEPARATOR);
 
         for (String event : events) {
             System.out.println(event);
         }
 
-        System.out.println("────────────────────────────────────────");
+        System.out.println(SEPARATOR);
     }
 
     public static List<String> getEvents() {
         return new ArrayList<>(events);
     }
-
-    /**
-     * IMPROVEMENTS (Future Enhancements):
-     * 1. Add event categories (SCAN, ERROR, INFO).
-     *
-     * 2. Store timestamps as DateTime objects instead of strings.
-     *
-     * 3. Support export to JSON/CSV formats.
-     *
-     * 4. Add event severity levels (info, warning, error).
-     *
-     * 5. Integrate timeline into HTML/PDF reports.
-     *
-     * 6. Support multi-target timelines.
-     */
 }
